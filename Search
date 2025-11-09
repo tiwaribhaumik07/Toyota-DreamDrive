@@ -1,0 +1,253 @@
+import React, { useState, useEffect } from 'react';
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search as SearchIcon, Grid3x3, List, Loader2 } from "lucide-react";
+import SearchFilters from "../components/vehicle/SearchFilters";
+import VehicleCard from "../components/vehicle/VehicleCard";
+import { motion, AnimatePresence } from "framer-motion";
+
+export default function Search() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({
+    minPrice: 0,
+    maxPrice: 100000,
+    minYear: 2015,
+    maxYear: 2025,
+    maxMileage: 150000,
+    conditions: [],
+    fuelTypes: [],
+    drivetrains: [],
+    model: null
+  });
+  const [sortBy, setSortBy] = useState('price-asc');
+  const [viewMode, setViewMode] = useState('grid');
+  const [compareList, setCompareList] = useState([]);
+
+  // Get URL params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
+    const model = params.get('model');
+    if (q) setSearchQuery(q);
+    if (model) setFilters(prev => ({ ...prev, model }));
+  }, []);
+
+  const { data: vehicles = [], isLoading } = useQuery({
+    queryKey: ['vehicles'],
+    queryFn: async () => {
+      const allVehicles = await base44.entities.Vehicle.list('-created_date', 500);
+      return allVehicles;
+    }
+  });
+
+  // Client-side filtering
+  const filteredVehicles = vehicles.filter(vehicle => {
+    // Search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const searchString = `${vehicle.year} ${vehicle.model} ${vehicle.trim || ''} ${vehicle.fuel_type || ''}`.toLowerCase();
+      if (!searchString.includes(query)) return false;
+    }
+
+    // Price
+    if (vehicle.list_price < filters.minPrice || vehicle.list_price > filters.maxPrice) return false;
+
+    // Year
+    if (vehicle.year < filters.minYear || vehicle.year > filters.maxYear) return false;
+
+    // Mileage
+    if (vehicle.mileage && vehicle.mileage > filters.maxMileage) return false;
+
+    // Conditions
+    if (filters.conditions.length > 0 && !filters.conditions.includes(vehicle.condition)) return false;
+
+    // Fuel types
+    if (filters.fuelTypes.length > 0 && !filters.fuelTypes.includes(vehicle.fuel_type)) return false;
+
+    // Drivetrains
+    if (filters.drivetrains.length > 0 && !filters.drivetrains.includes(vehicle.drivetrain)) return false;
+
+    // Model
+    if (filters.model && vehicle.model !== filters.model) return false;
+
+    return true;
+  });
+
+  // Sorting
+  const sortedVehicles = [...filteredVehicles].sort((a, b) => {
+    switch (sortBy) {
+      case 'price-asc':
+        return a.list_price - b.list_price;
+      case 'price-desc':
+        return b.list_price - a.list_price;
+      case 'year-desc':
+        return b.year - a.year;
+      case 'year-asc':
+        return a.year - b.year;
+      case 'mileage-asc':
+        return (a.mileage || 0) - (b.mileage || 0);
+      default:
+        return 0;
+    }
+  });
+
+  const toggleCompare = (vehicleId) => {
+    setCompareList(prev => {
+      if (prev.includes(vehicleId)) {
+        return prev.filter(id => id !== vehicleId);
+      } else if (prev.length < 4) {
+        return [...prev, vehicleId];
+      }
+      return prev;
+    });
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      minPrice: 0,
+      maxPrice: 100000,
+      minYear: 2015,
+      maxYear: 2025,
+      maxMileage: 150000,
+      conditions: [],
+      fuelTypes: [],
+      drivetrains: [],
+      model: null
+    });
+    setSearchQuery('');
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-4">Search Inventory</h1>
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-xl w-full">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search by model, year, or keyword..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {/* Sort & View Controls */}
+            <div className="flex gap-2 items-center">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                  <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                  <SelectItem value="year-desc">Year: Newest</SelectItem>
+                  <SelectItem value="year-asc">Year: Oldest</SelectItem>
+                  <SelectItem value="mileage-asc">Mileage: Low to High</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="flex gap-1 border rounded-lg p-1">
+                <Button
+                  size="sm"
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  onClick={() => setViewMode('grid')}
+                  className="px-2"
+                >
+                  <Grid3x3 className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  onClick={() => setViewMode('list')}
+                  className="px-2"
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Results Count */}
+          <p className="text-gray-600 mt-4">
+            Showing {sortedVehicles.length} of {vehicles.length} vehicles
+            {compareList.length > 0 && (
+              <span className="ml-4 text-[#0033A0] font-semibold">
+                • {compareList.length} selected for comparison
+              </span>
+            )}
+          </p>
+        </div>
+
+        {/* Main Content */}
+        <div className="grid lg:grid-cols-4 gap-8">
+          {/* Filters Sidebar */}
+          <div className="lg:col-span-1">
+            <SearchFilters
+              filters={filters}
+              onFilterChange={setFilters}
+              onReset={resetFilters}
+            />
+          </div>
+
+          {/* Results Grid */}
+          <div className="lg:col-span-3">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin text-[#0033A0]" />
+                <span className="ml-3 text-gray-600">Loading vehicles...</span>
+              </div>
+            ) : sortedVehicles.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-xl shadow-lg">
+                <p className="text-xl text-gray-600 mb-4">No vehicles found matching your criteria</p>
+                <Button onClick={resetFilters} variant="outline">
+                  Reset Filters
+                </Button>
+              </div>
+            ) : (
+              <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 gap-6' : 'space-y-4'}>
+                <AnimatePresence>
+                  {sortedVehicles.map(vehicle => (
+                    <VehicleCard
+                      key={vehicle.id}
+                      vehicle={vehicle}
+                      onCompareToggle={toggleCompare}
+                      isInCompare={compareList.includes(vehicle.id)}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Compare CTA */}
+        {compareList.length > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50"
+          >
+            <Button
+              size="lg"
+              className="bg-[#E60012] hover:bg-[#CC0010] shadow-2xl px-8"
+              onClick={() => {
+                const ids = compareList.join(',');
+                window.location.href = createPageUrl('Compare', `?ids=${ids}`);
+              }}
+            >
+              Compare {compareList.length} Vehicle{compareList.length > 1 ? 's' : ''}
+            </Button>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}
