@@ -1,0 +1,146 @@
+import React, { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { ArrowLeft, Upload, X } from "lucide-react";
+import { toast } from "sonner";
+
+const MODELS = ['Camry', 'Corolla', 'RAV4', 'Highlander', 'Tacoma', 'Tundra', 'Prius', '4Runner', 'Sienna', 'Avalon'];
+
+export default function AdminVehicleCreate() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [imageUrls, setImageUrls] = useState([]);
+  const [featureInput, setFeatureInput] = useState('');
+
+  const [formData, setFormData] = useState({
+    vin: '',
+    model: '',
+    trim: '',
+    year: new Date().getFullYear(),
+    msrp: '',
+    list_price: '',
+    condition: 'new',
+    mileage: 0,
+    fuel_type: 'gas',
+    transmission: 'automatic',
+    drivetrain: 'FWD',
+    exterior_color: '',
+    interior_color: '',
+    horsepower: '',
+    torque: '',
+    mpg_city: '',
+    mpg_highway: '',
+    mpg_combined: '',
+    engine: '',
+    seating: 5,
+    doors: 4,
+    features: [],
+    dealer_id: '',
+    stock_number: '',
+    description: ''
+  });
+
+  const { data: dealers = [] } = useQuery({
+    queryKey: ['dealers'],
+    queryFn: () => base44.entities.Dealer.list()
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data) => {
+      return base44.entities.Vehicle.create(data);
+    },
+    onSuccess: () => {
+      toast.success('Vehicle created successfully!');
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      navigate(createPageUrl('AdminVehicles'));
+    }
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const data = {
+      ...formData,
+      images: imageUrls,
+      msrp: formData.msrp ? Number(formData.msrp) : null,
+      list_price: Number(formData.list_price),
+      year: Number(formData.year),
+      mileage: Number(formData.mileage),
+      horsepower: formData.horsepower ? Number(formData.horsepower) : null,
+      torque: formData.torque ? Number(formData.torque) : null,
+      mpg_city: formData.mpg_city ? Number(formData.mpg_city) : null,
+      mpg_highway: formData.mpg_highway ? Number(formData.mpg_highway) : null,
+      mpg_combined: formData.mpg_combined ? Number(formData.mpg_combined) : null,
+      seating: Number(formData.seating),
+      doors: Number(formData.doors)
+    };
+    createMutation.mutate(data);
+  };
+
+  const addFeature = () => {
+    if (featureInput.trim()) {
+      setFormData({ ...formData, features: [...formData.features, featureInput.trim()] });
+      setFeatureInput('');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Button
+          variant="ghost"
+          onClick={() => navigate(createPageUrl('AdminVehicles'))}
+          className="mb-6"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Vehicles
+        </Button>
+
+        <h1 className="text-4xl font-bold mb-8">Add New Vehicle</h1>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Basic Information</CardTitle>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="model">Model *</Label>
+                <Select value={formData.model} onValueChange={(v) => setFormData({...formData, model: v})} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MODELS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="trim">Trim</Label>
+                <Input id="trim" value={formData.trim} onChange={(e) => setFormData({...formData, trim: e.target.value})} />
+              </div>
+              <div>
+                <Label htmlFor="year">Year *</Label>
+                <Input type="number" id="year" value={formData.year} onChange={(e) => setFormData({...formData, year: e.target.value})} required />
+              </div>
+              <div>
+                <Label htmlFor="condition">Condition *</Label>
+                <Select value={formData.condition} onValueChange={(v) => setFormData({...formData, condition: v})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="certified">Certified</SelectItem>
+                    <SelectItem value="used">Used</SelectItem>
+                  </SelectContent>
+                </Select>
+ 
