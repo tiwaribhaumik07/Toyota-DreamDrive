@@ -1,0 +1,40 @@
+{
+  "name": "FinancingQuote",
+  "type": "object",
+  "properties": {
+    "vehicle_id": {
+      "type": "string",
+      "description": "Reference to vehicle"
+    },
+    "quote_type": {
+      "type": "string",
+      "enum": [
+        "loan",
+        "lease"
+      ],
+      "description": "Type of financing"
+    },
+    "vehicle_price": {
+      "type": "number"
+    },
+    "down_payment": {
+      "type": "number"
+    },
+    "trade_in_value": {
+      "type": "number",
+      "default": 0
+    },
+    "term_months": {
+      "type": "integer"
+    },
+    "apr": {
+      "type": "number",
+      "description": "Annual percentage rate as decimal (e.g., 0.0575 for 5.75%)"
+    },
+    "monthly_payment": {
+      "type": "number"
+    },
+    "total_interest": {
+      "type": "number"
+    },
+ 
