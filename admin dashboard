@@ -1,0 +1,146 @@
+import React from 'react';
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { Car, DollarSign, Users, TrendingUp, Plus, Package } from "lucide-react";
+
+export default function AdminDashboard() {
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['vehicles'],
+    queryFn: () => base44.entities.Vehicle.list()
+  });
+
+  const { data: dealers = [] } = useQuery({
+    queryKey: ['dealers'],
+    queryFn: () => base44.entities.Dealer.list()
+  });
+
+  const { data: quotes = [] } = useQuery({
+    queryKey: ['quotes'],
+    queryFn: () => base44.entities.FinancingQuote.list()
+  });
+
+  const totalValue = vehicles.reduce((sum, v) => sum + (v.list_price || 0), 0);
+  const avgPrice = vehicles.length > 0 ? totalValue / vehicles.length : 0;
+
+  const stats = [
+    {
+      title: "Total Vehicles",
+      value: vehicles.length,
+      icon: Car,
+      color: "bg-blue-500"
+    },
+    {
+      title: "Total Inventory Value",
+      value: `$${(totalValue / 1000000).toFixed(1)}M`,
+      icon: DollarSign,
+      color: "bg-green-500"
+    },
+    {
+      title: "Active Dealers",
+      value: dealers.length,
+      icon: Users,
+      color: "bg-purple-500"
+    },
+    {
+      title: "Quotes Generated",
+      value: quotes.length,
+      icon: TrendingUp,
+      color: "bg-orange-500"
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="text-gray-600 mt-2">Manage your inventory and dealerships</p>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat) => (
+            <Card key={stat.title} className="border-none shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">{stat.title}</p>
+                    <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                  </div>
+                  <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center`}>
+                    <stat.icon className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Quick Actions */}
+        <Card className="border-none shadow-lg mb-8">
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-4">
+              <Link to={createPageUrl('AdminVehicles')}>
+                <Button className="w-full bg-[#0033A0] hover:bg-[#002A85]">
+                  <Car className="w-4 h-4 mr-2" />
+                  Manage Vehicles
+                </Button>
+              </Link>
+              <Link to={createPageUrl('AdminDealers')}>
+                <Button className="w-full bg-[#0033A0] hover:bg-[#002A85]">
+                  <Package className="w-4 h-4 mr-2" />
+                  Manage Dealers
+                </Button>
+              </Link>
+              <Link to={createPageUrl('AdminVehicleCreate')}>
+                <Button className="w-full bg-[#E60012] hover:bg-[#CC0010]">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add New Vehicle
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Vehicles */}
+        <Card className="border-none shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Recent Vehicles</CardTitle>
+            <Link to={createPageUrl('AdminVehicles')}>
+              <Button variant="outline" size="sm">View All</Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {vehicles.slice(0, 5).map(vehicle => (
+                <div key={vehicle.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={vehicle.images?.[0] || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=200'}
+                      alt={vehicle.model}
+                      className="w-16 h-16 rounded object-cover"
+                    />
+                    <div>
+                      <p className="font-semibold">{vehicle.year} {vehicle.model} {vehicle.trim}</p>
+                      <p className="text-sm text-gray-600">${vehicle.list_price.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <Link to={createPageUrl('AdminVehicleEdit', `?id=${vehicle.id}`)}>
+                    <Button variant="outline" size="sm">Edit</Button>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
