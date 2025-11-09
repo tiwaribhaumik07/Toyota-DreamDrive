@@ -1,0 +1,136 @@
+import React from 'react';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Trash2, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { toast } from "sonner";
+
+export default function AccountCompareLists() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { data: user } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: () => base44.auth.me()
+  });
+
+  const { data: compareLists = [] } = useQuery({
+    queryKey: ['my-compare-lists'],
+    queryFn: async () => {
+      const all = await base44.entities.CompareList.list('-created_date');
+      return all.filter(c => c.created_by === user?.email);
+    },
+    enabled: !!user
+  });
+
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['vehicles'],
+    queryFn: () => base44.entities.Vehicle.list()
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.CompareList.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-compare-lists'] });
+      toast.success('Comparison deleted');
+    }
+  });
+
+  const getVehicles = (ids) => vehicles.filter(v => ids?.includes(v.id));
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md w-full mx-4">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-2xl font-bold mb-4">Sign In Required</h2>
+            <p className="text-gray-600 mb-6">Please sign in to view your saved comparisons.</p>
+            <Button onClick={() => base44.auth.redirectToLogin()}>Sign In</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold">Saved Comparisons</h1>
+          <p className="text-gray-600 mt-2">View and manage your vehicle comparisons</p>
+        </div>
+
+        {compareLists.length === 0 ? (
+          <Card className="border-none shadow-lg">
+            <CardContent className="p-12 text-center">
+              <p className="text-xl text-gray-600 mb-6">You don't have any saved comparisons yet.</p>
+              <Button
+                className="bg-[#0033A0] hover:bg-[#002A85]"
+                onClick={() => navigate(createPageUrl('Search'))}
+              >
+                Browse Inventory
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-6">
+            {compareLists.map(list => {
+              const listVehicles = getVehicles(list.vehicle_ids);
+              return (
+                <Card key={list.id} className="border-none shadow-lg">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold">{list.name || 'Comparison'}</h3>
+                        <p className="text-sm text-gray-500">
+                          {listVehicles.length} vehicles • {new Date(list.created_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      {listVehicles.slice(0, 4).map(vehicle => (
+                        <div key={vehicle.id} className="relative">
+                          <img
+                            src={vehicle.images?.[0] || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=200'}
+                            alt={vehicle.model}
+                            className="w-full h-24 object-cover rounded"
+                          />
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                            <p className="text-white text-xs font-semibold truncate">
+                              {vehicle.year} {vehicle.model}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1"
+                        onClick={() => navigate(createPageUrl('Compare', `?ids=${list.vehicle_ids.join(',')}`))}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        View Comparison
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => deleteMutation.mutate(list.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
