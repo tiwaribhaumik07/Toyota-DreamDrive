@@ -1,0 +1,189 @@
+import React, { useState } from 'react';
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, X, Eye, DollarSign } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { Loader2 } from "lucide-react";
+
+export default function Compare() {
+  const navigate = useNavigate();
+  const params = new URLSearchParams(window.location.search);
+  const ids = params.get('ids')?.split(',').filter(Boolean) || [];
+
+  const { data: allVehicles = [], isLoading } = useQuery({
+    queryKey: ['vehicles'],
+    queryFn: () => base44.entities.Vehicle.list()
+  });
+
+  const vehicles = allVehicles.filter(v => ids.includes(v.id)).slice(0, 4);
+
+  const specs = [
+    { label: 'Price', key: 'list_price', format: (v) => `$${v.toLocaleString()}` },
+    { label: 'Year', key: 'year' },
+    { label: 'Condition', key: 'condition', format: (v) => v?.toUpperCase() },
+    { label: 'Mileage', key: 'mileage', format: (v) => v ? `${v.toLocaleString()} mi` : 'N/A' },
+    { label: 'Fuel Type', key: 'fuel_type' },
+    { label: 'Transmission', key: 'transmission' },
+    { label: 'Drivetrain', key: 'drivetrain' },
+    { label: 'Horsepower', key: 'horsepower', format: (v) => v ? `${v} hp` : 'N/A' },
+    { label: 'Torque', key: 'torque', format: (v) => v ? `${v} lb-ft` : 'N/A' },
+    { label: 'MPG City', key: 'mpg_city', format: (v) => v ? `${v} mpg` : 'N/A' },
+    { label: 'MPG Highway', key: 'mpg_highway', format: (v) => v ? `${v} mpg` : 'N/A' },
+    { label: 'MPG Combined', key: 'mpg_combined', format: (v) => v ? `${v} mpg` : 'N/A' },
+    { label: 'Seating', key: 'seating', format: (v) => v ? `${v} seats` : 'N/A' },
+    { label: 'Exterior Color', key: 'exterior_color' },
+    { label: 'Interior Color', key: 'interior_color' }
+  ];
+
+  const removeVehicle = (id) => {
+    const newIds = ids.filter(i => i !== id);
+    if (newIds.length === 0) {
+      navigate(createPageUrl('Search'));
+    } else {
+      navigate(createPageUrl('Compare', `?ids=${newIds.join(',')}`));
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0033A0]" />
+      </div>
+    );
+  }
+
+  if (vehicles.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md w-full mx-4">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-2xl font-bold mb-4">No Vehicles Selected</h2>
+            <p className="text-gray-600 mb-6">
+              Select vehicles from the search page to compare them here.
+            </p>
+            <Button onClick={() => navigate(createPageUrl('Search'))}>
+              Browse Inventory
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(createPageUrl('Search'))}
+            className="mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Search
+          </Button>
+          <h1 className="text-4xl font-bold">Compare Vehicles</h1>
+          <p className="text-gray-600 mt-2">
+            Comparing {vehicles.length} vehicle{vehicles.length > 1 ? 's' : ''} side-by-side
+          </p>
+        </div>
+
+        {/* Comparison Table */}
+        <div className="bg-white rounded-xl shadow-lg overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="p-4 text-left bg-gray-50 sticky left-0 z-10 min-w-[200px]">
+                  <span className="text-sm font-semibold text-gray-500">SPECIFICATION</span>
+                </th>
+                {vehicles.map(vehicle => (
+                  <th key={vehicle.id} className="p-4 min-w-[280px] bg-gray-50">
+                    <div className="space-y-3">
+                      {/* Image */}
+                      <div className="relative h-40 bg-gray-100 rounded-lg overflow-hidden">
+                        <img
+                          src={vehicle.images?.[0] || 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=400'}
+                          alt={`${vehicle.year} ${vehicle.model}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          className="absolute top-2 right-2"
+                          onClick={() => removeVehicle(vehicle.id)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      
+                      {/* Title */}
+                      <div>
+                        <h3 className="font-bold text-lg">
+                          {vehicle.year} {vehicle.model}
+                        </h3>
+                        {vehicle.trim && (
+                          <p className="text-sm text-gray-600">{vehicle.trim}</p>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => navigate(createPageUrl('VehicleDetail', `?id=${vehicle.id}`))}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
+                        </Button>
+                      </div>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {specs.map((spec, index) => (
+                <tr key={spec.key} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                  <td className="p-4 font-semibold text-gray-700 sticky left-0 z-10 bg-inherit border-r">
+                    {spec.label}
+                  </td>
+                  {vehicles.map(vehicle => {
+                    const value = vehicle[spec.key];
+                    const formatted = spec.format ? spec.format(value) : value || 'N/A';
+                    
+                    // Highlight best value for numeric comparisons
+                    let isBest = false;
+                    if (spec.key === 'list_price') {
+                      isBest = value === Math.min(...vehicles.map(v => v.list_price));
+                    } else if (['mpg_city', 'mpg_highway', 'mpg_combined', 'horsepower'].includes(spec.key)) {
+                      isBest = value === Math.max(...vehicles.map(v => v[spec.key] || 0));
+                    } else if (spec.key === 'mileage') {
+                      isBest = value === Math.min(...vehicles.filter(v => v.mileage).map(v => v.mileage));
+                    }
+
+                    return (
+                      <td key={vehicle.id} className={`p-4 text-center ${isBest ? 'bg-green-50' : ''}`}>
+                        {isBest && (
+                          <Badge className="bg-green-600 text-white mb-1">Best</Badge>
+                        )}
+                        <div className={isBest ? 'font-semibold text-green-900' : ''}>
+                          {formatted}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Bottom CTAs */}
+ 
