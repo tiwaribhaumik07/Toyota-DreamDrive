@@ -1,0 +1,40 @@
+{
+  "name": "Dealer",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Dealer name"
+    },
+    "address": {
+      "type": "string",
+      "description": "Full address"
+    },
+    "city": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "zip": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "name",
+    "phone"
+  ]
+}
