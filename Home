@@ -1,0 +1,368 @@
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Search, ArrowRight, Zap, Shield, DollarSign, Award, Sparkles, TrendingUp, Heart, Star } from "lucide-react";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import VehicleCard from "../components/vehicle/VehicleCard";
+
+export default function Home() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
+
+  const { data: featuredVehicles = [] } = useQuery({
+    queryKey: ['featured-vehicles'],
+    queryFn: async () => {
+      const vehicles = await base44.entities.Vehicle.list('-created_date', 6);
+      return vehicles;
+    }
+  });
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    navigate(createPageUrl('Search', searchQuery ? `?q=${searchQuery}` : ''));
+  };
+
+  const features = [
+    {
+      icon: Shield,
+      title: "Certified Quality",
+      description: "Every vehicle inspected and verified",
+      gradient: "from-blue-500 to-cyan-500"
+    },
+    {
+      icon: DollarSign,
+      title: "Transparent Pricing",
+      description: "No hidden fees, clear financing",
+      gradient: "from-emerald-500 to-teal-500"
+    },
+    {
+      icon: Zap,
+      title: "Instant Quotes",
+      description: "Real-time financing estimates",
+      gradient: "from-purple-500 to-pink-500"
+    },
+    {
+      icon: Award,
+      title: "Toyota Certified",
+      description: "Warranty & roadside assistance",
+      gradient: "from-orange-500 to-red-500"
+    }
+  ];
+
+  const models = [
+    { name: 'Camry', tagline: 'Refined Sedan', image: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800' },
+    { name: 'RAV4', tagline: 'Adventure Ready', image: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=800' },
+    { name: 'Highlander', tagline: 'Family First', image: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800' },
+    { name: 'Tacoma', tagline: 'Built to Last', image: 'https://images.unsplash.com/photo-1617654112368-307921291f42?w=800' }
+  ];
+
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Hero Section with Particles Effect */}
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+        {/* Animated Background Grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000,transparent)]" />
+        
+        {/* Floating Orbs */}
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-20 left-20 w-96 h-96 bg-blue-500 rounded-full blur-[120px]"
+        />
+        <motion.div
+          animate={{
+            scale: [1.2, 1, 1.2],
+            opacity: [0.2, 0.4, 0.2],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute bottom-20 right-20 w-96 h-96 bg-red-500 rounded-full blur-[120px]"
+        />
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 w-full">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1 }}
+            className="text-center"
+          >
+            {/* Badge */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-full px-6 py-2 mb-8"
+            >
+              <Sparkles className="w-4 h-4 text-yellow-400" />
+              <span className="text-white text-sm font-medium">Premium Toyota Dealer Experience</span>
+            </motion.div>
+
+            <h1 className="text-6xl md:text-8xl font-black mb-6 leading-none">
+              <span className="text-white">Find Your</span>
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-400 animate-gradient">
+                Dream Toyota
+              </span>
+            </h1>
+            
+            <p className="text-xl md:text-2xl mb-12 text-gray-300 max-w-3xl mx-auto leading-relaxed">
+              Discover premium vehicles with transparent pricing, instant financing,
+              and a seamless shopping experience
+            </p>
+
+            {/* Enhanced Search Bar */}
+            <form onSubmit={handleSearch} className="max-w-3xl mx-auto mb-12">
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-500" />
+                <div className="relative flex gap-2 bg-white rounded-full p-2 shadow-2xl">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search by model, year, or features..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-14 pr-6 border-0 focus-visible:ring-0 text-gray-900 text-lg h-16 bg-transparent"
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    size="lg" 
+                    className="rounded-full bg-gradient-to-r from-[#E60012] to-red-600 hover:from-[#CC0010] hover:to-red-700 px-8 h-16 text-lg font-semibold shadow-lg shadow-red-500/50"
+                  >
+                    Search
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+            </form>
+
+            {/* Quick Model Buttons */}
+            <div className="flex flex-wrap justify-center gap-3">
+              {['Camry', 'RAV4', 'Highlander', 'Tacoma', 'Prius'].map((model, i) => (
+                <motion.button
+                  key={model}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 + i * 0.1 }}
+                  onClick={() => navigate(createPageUrl('Search', `?model=${model}`))}
+                  className="group relative px-6 py-3 bg-white/5 backdrop-blur-lg border border-white/10 rounded-full hover:bg-white/10 transition-all duration-300"
+                >
+                  <span className="text-white font-medium">{model}</span>
+                  <ArrowRight className="inline-block ml-2 w-4 h-4 text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Features Section - Enhanced */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-white" />
+        <div className="max-w-7xl mx-auto relative">
+          <div className="text-center mb-16">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="inline-flex items-center gap-2 bg-blue-100 rounded-full px-4 py-2 mb-4"
+            >
+              <Star className="w-4 h-4 text-blue-600" />
+              <span className="text-blue-600 text-sm font-semibold">Why Choose Us</span>
+            </motion.div>
+            <h2 className="text-5xl font-black mb-4 text-gray-900">
+              Experience the Difference
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Premium service meets innovative technology for your perfect car buying journey
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ y: -8, scale: 1.02 }}
+                className="group"
+              >
+                <Card className="border-none shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden h-full bg-white">
+                  <CardContent className="p-8 text-center relative">
+                    {/* Gradient Orb Background */}
+                    <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${feature.gradient} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`} />
+                    
+                    <div className={`w-16 h-16 bg-gradient-to-br ${feature.gradient} rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-500 shadow-lg`}>
+                      <feature.icon className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-3 text-gray-900">{feature.title}</h3>
+                    <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Models Showcase */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-900 to-slate-800 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxIDAgNiAyLjY5IDYgNnMtMi42OSA2LTYgNi02LTIuNjktNi02IDIuNjktNiA2LTZ6TTI0IDQyYzMuMzEgMCA2IDIuNjkgNiA2cy0yLjY5IDYtNiA2LTYtMi42OS02LTYgMi42OS02IDYtNnoiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIuNSIgb3BhY2l0eT0iLjEiLz48L2c+PC9zdmc+')] opacity-20" />
+        
+        <div className="max-w-7xl mx-auto relative">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-5xl font-black mb-4 text-white">
+              Explore Our Collection
+            </h2>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              From efficient sedans to rugged trucks, find your perfect match
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {models.map((model, i) => (
+              <motion.div
+                key={model.name}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ scale: 1.05 }}
+                onClick={() => navigate(createPageUrl('Search', `?model=${model.name}`))}
+                className="group cursor-pointer relative overflow-hidden rounded-2xl h-64"
+              >
+                <img src={model.image} alt={model.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <p className="text-sm text-cyan-400 font-semibold mb-1">{model.tagline}</p>
+                  <h3 className="text-3xl font-black text-white mb-2">{model.name}</h3>
+                  <div className="flex items-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-sm mr-2">Explore</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Vehicles */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center gap-2 bg-red-100 rounded-full px-4 py-2 mb-4">
+              <TrendingUp className="w-4 h-4 text-red-600" />
+              <span className="text-red-600 text-sm font-semibold">Latest Arrivals</span>
+            </div>
+            <h2 className="text-5xl font-black mb-4 text-gray-900">Featured Vehicles</h2>
+            <p className="text-xl text-gray-600">Handpicked premium vehicles ready for you</p>
+          </motion.div>
+          
+          {featuredVehicles.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredVehicles.map((vehicle, i) => (
+                <motion.div
+                  key={vehicle.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                >
+                  <VehicleCard vehicle={vehicle} />
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Loading featured vehicles...</p>
+            </div>
+          )}
+
+          <div className="text-center mt-16">
+            <Button
+              size="lg"
+              className="bg-gradient-to-r from-[#0033A0] to-blue-600 hover:from-[#002A85] hover:to-blue-700 text-lg px-8 h-14 rounded-full shadow-xl shadow-blue-500/30"
+              onClick={() => navigate(createPageUrl('Search'))}
+            >
+              View All Inventory
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section - Enhanced */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 via-blue-700 to-cyan-600 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxIiBvcGFjaXR5PSIwLjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30" />
+        
+        <div className="max-w-5xl mx-auto text-center relative">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+          >
+            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-lg rounded-full px-4 py-2 mb-8">
+              <Heart className="w-4 h-4 text-white" />
+              <span className="text-white text-sm font-semibold">Start Your Journey</span>
+            </div>
+            
+            <h2 className="text-5xl md:text-6xl font-black mb-6 text-white leading-tight">
+              Ready to Find Your<br />Perfect Toyota?
+            </h2>
+            <p className="text-xl md:text-2xl mb-10 text-blue-100 max-w-3xl mx-auto leading-relaxed">
+              Join thousands of satisfied customers who found their dream vehicle with us
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                size="lg"
+                className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-10 h-14 rounded-full font-bold shadow-2xl"
+                onClick={() => navigate(createPageUrl('Search'))}
+              >
+                Browse Inventory
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-2 border-white text-white hover:bg-white hover:text-blue-600 text-lg px-10 h-14 rounded-full font-bold bg-transparent"
+                onClick={() => navigate(createPageUrl('Compare'))}
+              >
+                Compare Vehicles
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+    </div>
+  );
+}
