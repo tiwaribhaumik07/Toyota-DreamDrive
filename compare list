@@ -1,0 +1,23 @@
+{
+  "name": "CompareList",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the comparison"
+    },
+    "vehicle_ids": {
+      "type": "array",
+      "description": "Array of vehicle IDs to compare (max 4)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "vehicle_ids"
+  ]
+}
