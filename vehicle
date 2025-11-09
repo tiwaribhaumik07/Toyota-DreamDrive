@@ -1,0 +1,40 @@
+{
+  "name": "Vehicle",
+  "type": "object",
+  "properties": {
+    "vin": {
+      "type": "string",
+      "description": "Vehicle Identification Number"
+    },
+    "make": {
+      "type": "string",
+      "default": "Toyota"
+    },
+    "model": {
+      "type": "string",
+      "description": "Model name (Camry, RAV4, etc)"
+    },
+    "trim": {
+      "type": "string",
+      "description": "Trim level (LE, XLE, XSE, etc)"
+    },
+    "year": {
+      "type": "integer"
+    },
+    "msrp": {
+      "type": "number",
+      "description": "Manufacturer suggested retail price"
+    },
+    "list_price": {
+      "type": "number",
+      "description": "Actual selling price"
+    },
+    "condition": {
+      "type": "string",
+      "enum": [
+        "new",
+        "certified",
+        "used"
+      ],
+      "description": "Vehicle condition"
+ 
