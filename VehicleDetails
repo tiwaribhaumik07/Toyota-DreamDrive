@@ -1,0 +1,189 @@
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Phone, Mail, MapPin, Share2, Heart, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { toast } from "sonner";
+import VehicleGallery from "../components/vehicle/VehicleGallery";
+import SpecsTable from "../components/vehicle/SpecsTable";
+import FinanceCalculator from "../components/finance/FinanceCalculator";
+
+export default function VehicleDetail() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const params = new URLSearchParams(window.location.search);
+  const vehicleId = params.get('id');
+
+  const { data: vehicle, isLoading } = useQuery({
+    queryKey: ['vehicle', vehicleId],
+    queryFn: async () => {
+      const vehicles = await base44.entities.Vehicle.list();
+      return vehicles.find(v => v.id === vehicleId);
+    },
+    enabled: !!vehicleId
+  });
+
+  const { data: dealer } = useQuery({
+    queryKey: ['dealer', vehicle?.dealer_id],
+    queryFn: async () => {
+      if (!vehicle?.dealer_id) return null;
+      const dealers = await base44.entities.Dealer.list();
+      return dealers.find(d => d.id === vehicle.dealer_id);
+    },
+    enabled: !!vehicle?.dealer_id
+  });
+
+  const saveQuoteMutation = useMutation({
+    mutationFn: async (quoteData) => {
+      const user = await base44.auth.me();
+      return base44.entities.FinancingQuote.create({
+        ...quoteData,
+        created_by: user.email
+      });
+    },
+    onSuccess: () => {
+      toast.success('Quote saved successfully!');
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+    }
+  });
+
+  if (isLoading || !vehicle) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0033A0]" />
+      </div>
+    );
+  }
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success('Link copied to clipboard!');
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          onClick={() => navigate(createPageUrl('Search'))}
+          className="mb-6"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Search
+        </Button>
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Main Content - Left Column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Title & Price */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+                <div>
+                  <div className="flex gap-2 mb-2">
+                    <Badge className="bg-blue-100 text-blue-800">
+                      {vehicle.condition?.toUpperCase()}
+                    </Badge>
+                    {vehicle.stock_number && (
+                      <Badge variant="outline">Stock #{vehicle.stock_number}</Badge>
+                    )}
+                  </div>
+                  <h1 className="text-4xl font-bold text-gray-900">
+                    {vehicle.year} Toyota {vehicle.model}
+                  </h1>
+                  {vehicle.trim && (
+                    <p className="text-xl text-gray-600 mt-1">{vehicle.trim}</p>
+                  )}
+                </div>
+                <div className="text-right">
+                  {vehicle.msrp && vehicle.msrp > vehicle.list_price && (
+                    <p className="text-lg text-gray-500 line-through">
+                      ${vehicle.msrp.toLocaleString()}
+                    </p>
+                  )}
+                  <p className="text-4xl font-bold text-[#0033A0]">
+                    ${vehicle.list_price.toLocaleString()}
+                  </p>
+                  {vehicle.msrp && vehicle.msrp > vehicle.list_price && (
+                    <Badge className="bg-[#E60012] text-white mt-2">
+                      Save ${(vehicle.msrp - vehicle.list_price).toLocaleString()}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button className="flex-1 bg-[#E60012] hover:bg-[#CC0010]">
+                  <Phone className="w-4 h-4 mr-2" />
+                  Contact Dealer
+                </Button>
+                <Button variant="outline" onClick={handleShare}>
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share
+                </Button>
+                <Button variant="outline">
+                  <Heart className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Gallery */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <VehicleGallery
+                images={vehicle.images}
+                alt={`${vehicle.year} ${vehicle.model} ${vehicle.trim || ''}`}
+              />
+            </div>
+
+            {/* Specs */}
+            <SpecsTable vehicle={vehicle} />
+          </div>
+
+          {/* Right Column - Sticky Sidebar */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Dealer Info */}
+            {dealer && (
+              <div className="bg-white rounded-xl shadow-lg p-6 lg:sticky lg:top-4">
+                <h3 className="text-lg font-bold mb-4">Dealer Information</h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="font-semibold text-gray-900">{dealer.name}</p>
+                    {dealer.address && (
+                      <p className="text-sm text-gray-600 flex items-start gap-2 mt-1">
+                        <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span>{dealer.address}</span>
+                      </p>
+                    )}
+                  </div>
+                  {dealer.phone && (
+                    <Button variant="outline" className="w-full">
+                      <Phone className="w-4 h-4 mr-2" />
+                      {dealer.phone}
+                    </Button>
+                  )}
+                  {dealer.email && (
+                    <Button variant="outline" className="w-full">
+                      <Mail className="w-4 h-4 mr-2" />
+                      Email Dealer
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Finance Calculator */}
+            <div className="lg:sticky lg:top-4">
+              <FinanceCalculator
+                vehicle={vehicle}
+                onSaveQuote={(quoteData) => saveQuoteMutation.mutate(quoteData)}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
