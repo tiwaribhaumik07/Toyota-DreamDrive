@@ -1,0 +1,136 @@
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { ArrowLeft, Plus, Edit, Trash2, MapPin, Phone, Mail } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+export default function AdminDealers() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [editingDealer, setEditingDealer] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
+  const [showDialog, setShowDialog] = useState(false);
+
+  const [formData, setFormData] = useState({
+    name: '',
+    address: '',
+    city: '',
+    state: '',
+    zip: '',
+    phone: '',
+    email: '',
+    latitude: '',
+    longitude: ''
+  });
+
+  const { data: dealers = [], isLoading } = useQuery({
+    queryKey: ['dealers'],
+    queryFn: () => base44.entities.Dealer.list('-created_date')
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data) => base44.entities.Dealer.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dealers'] });
+      toast.success('Dealer created successfully');
+      setShowDialog(false);
+      resetForm();
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Dealer.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dealers'] });
+      toast.success('Dealer updated successfully');
+      setShowDialog(false);
+      setEditingDealer(null);
+      resetForm();
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Dealer.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dealers'] });
+      toast.success('Dealer deleted successfully');
+      setDeleteId(null);
+    }
+  });
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      address: '',
+      city: '',
+      state: '',
+      zip: '',
+      phone: '',
+      email: '',
+      latitude: '',
+      longitude: ''
+    });
+  };
+
+  const handleEdit = (dealer) => {
+    setEditingDealer(dealer);
+    setFormData({
+      name: dealer.name || '',
+      address: dealer.address || '',
+      city: dealer.city || '',
+      state: dealer.state || '',
+      zip: dealer.zip || '',
+      phone: dealer.phone || '',
+      email: dealer.email || '',
+      latitude: dealer.latitude || '',
+      longitude: dealer.longitude || ''
+    });
+    setShowDialog(true);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const data = {
+      ...formData,
+      latitude: formData.latitude ? Number(formData.latitude) : null,
+      longitude: formData.longitude ? Number(formData.longitude) : null
+    };
+    
+    if (editingDealer) {
+      updateMutation.mutate({ id: editingDealer.id, data });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Button
+          variant="ghost"
+          onClick={() => navigate(createPageUrl('AdminDashboard'))}
+          className="mb-6"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Dashboard
+        </Button>
+
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+ 
