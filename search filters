@@ -1,0 +1,143 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { SlidersHorizontal, X, Filter } from "lucide-react";
+
+const MODELS = ['Camry', 'Corolla', 'RAV4', 'Highlander', 'Tacoma', 'Tundra', 'Prius', '4Runner', 'Sienna', 'Avalon'];
+const FUEL_TYPES = ['gas', 'hybrid', 'plug-in hybrid', 'electric'];
+const CONDITIONS = ['new', 'certified', 'used'];
+const DRIVETRAINS = ['FWD', 'RWD', 'AWD', '4WD'];
+
+export default function SearchFilters({ filters, onFilterChange, onReset }) {
+  const updateFilter = (key, value) => {
+    onFilterChange({ ...filters, [key]: value });
+  };
+
+  const toggleArrayFilter = (key, value) => {
+    const current = filters[key] || [];
+    const newArray = current.includes(value)
+      ? current.filter(v => v !== value)
+      : [...current, value];
+    updateFilter(key, newArray);
+  };
+
+  const activeFiltersCount = [
+    filters.model ? 1 : 0,
+    (filters.conditions || []).length,
+    (filters.fuelTypes || []).length,
+    (filters.drivetrains || []).length,
+    filters.minPrice !== 0 || filters.maxPrice !== 100000 ? 1 : 0,
+    filters.minYear !== 2015 || filters.maxYear !== 2025 ? 1 : 0,
+    filters.maxMileage !== 150000 ? 1 : 0
+  ].reduce((a, b) => a + b, 0);
+
+  return (
+    <Card className="border-0 shadow-2xl sticky top-4 overflow-hidden bg-gradient-to-br from-white to-gray-50">
+      <CardHeader className="border-b bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Filter className="w-5 h-5" />
+            Filters
+            {activeFiltersCount > 0 && (
+              <span className="bg-white text-blue-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                {activeFiltersCount}
+              </span>
+            )}
+          </CardTitle>
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onReset}
+              className="text-white hover:text-white hover:bg-white/20"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Clear
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+        {/* Model */}
+        <div>
+          <Label className="text-sm font-bold mb-3 block text-gray-900">Model</Label>
+          <Select
+            value={filters.model || 'all'}
+            onValueChange={(v) => updateFilter('model', v === 'all' ? null : v)}
+          >
+            <SelectTrigger className="border-2 border-gray-200 hover:border-blue-400 transition-colors">
+              <SelectValue placeholder="All Models" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Models</SelectItem>
+              {MODELS.map(model => (
+                <SelectItem key={model} value={model}>{model}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Price Range */}
+        <div className="space-y-3">
+          <Label className="text-sm font-bold block text-gray-900">
+            Price Range
+          </Label>
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span className="font-bold text-blue-600">${(filters.minPrice || 0).toLocaleString()}</span>
+            <span className="text-gray-400">—</span>
+            <span className="font-bold text-blue-600">${(filters.maxPrice || 100000).toLocaleString()}</span>
+          </div>
+          <Slider
+            min={0}
+            max={100000}
+            step={1000}
+            value={[filters.minPrice || 0, filters.maxPrice || 100000]}
+            onValueChange={([min, max]) => {
+              updateFilter('minPrice', min);
+              updateFilter('maxPrice', max);
+            }}
+            className="mt-3"
+          />
+        </div>
+
+        {/* Year Range */}
+        <div className="space-y-3">
+          <Label className="text-sm font-bold block text-gray-900">
+            Year
+          </Label>
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span className="font-bold text-blue-600">{filters.minYear || 2015}</span>
+            <span className="text-gray-400">—</span>
+            <span className="font-bold text-blue-600">{filters.maxYear || 2025}</span>
+          </div>
+          <Slider
+            min={2015}
+            max={2025}
+            step={1}
+            value={[filters.minYear || 2015, filters.maxYear || 2025]}
+            onValueChange={([min, max]) => {
+              updateFilter('minYear', min);
+              updateFilter('maxYear', max);
+            }}
+            className="mt-3"
+          />
+        </div>
+
+        {/* Condition */}
+        <div>
+          <Label className="text-sm font-bold mb-3 block text-gray-900">Condition</Label>
+          <div className="space-y-3">
+            {CONDITIONS.map(condition => (
+              <div 
+                key={condition} 
+                className={`flex items-center space-x-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                  (filters.conditions || []).includes(condition)
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+                onClick={() => toggleArrayFilter('conditions', condition)}
+ 
